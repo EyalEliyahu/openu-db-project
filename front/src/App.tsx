@@ -1,26 +1,27 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+import { ResponsiveAppBar } from './components/ResponsiveAppBar/ResponsiveAppBar';
+import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
+import { WordsPage } from './pages/WordsPage/WordsPage';
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+	return (
+		<div className="App">
+      <Router>
+        <ResponsiveAppBar/>
+        <Switch>
+          <Route exact path="/">
+            <WordsPage/>
+          </Route>
+          <Route path="/about">
+          </Route>
+          <Route path="/dashboard">
+          </Route>
+        </Switch>
+        
+      </Router>
     </div>
-  );
+	);
 }
 
 export default App;
