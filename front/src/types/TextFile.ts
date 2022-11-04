@@ -1,8 +1,7 @@
 export interface TextFile {
-	id: number;
-	author: string;
-	createdAt: string;
-	uploadedAt: string;
-	publishedAt: string;
-	fileName: string;
+  id: number;
+  author: string;
+  uploadedAt: string;
+  publishedAt: string;
+  fileName: string;
 }

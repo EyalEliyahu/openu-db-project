@@ -1,23 +1,25 @@
 import * as React from 'react';
 import { FC } from 'react';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
+import { TextField } from '@mui/material';
+import Button from '@mui/material/Button';
 
 interface Props {
-	options: object[],
-	label: string,
-	onSearchChange: (value: any) => void,
-	onSelectOption: (value: any) => void,
+  onSearch: (searchText: string) => void;
 }
 
-export const Search: FC<Props> = ({ options, label, onSearchChange, onSelectOption }) => {
-	return (
-		<Autocomplete
-			onChange={(event: any) => onSelectOption(event.target.innerText || '')}
-			disablePortal
-			id="combo-box-demo"
-			options={options}
-			renderInput={(params) => <TextField onChange={(event: any) => onSearchChange(event.target.value || '')} {...params} label={label}/>}
-		/>
-	);
+export const Search: FC<Props> = ({ onSearch }) => {
+  const [searchText, setSearchText] = React.useState('');
+  const onChanges = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchText(event.target.value);
+  }
+  return (
+    <div style={{
+      display: 'flex',
+      gap: 10,
+      marginTop: 20
+    }}>
+      <TextField value={searchText} onChange={onChanges} sx={{ flex: 10 }} id="standard-basic" variant="standard"/>
+      <Button onClick={() => onSearch(searchText)} sx={{ flex: 1 }} variant="contained">Search</Button>
+    </div>
+  );
 }
