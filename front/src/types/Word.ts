@@ -1,4 +1,4 @@
-import { TextFile } from './TextFile';
+import { file } from 'types/File';
 
 export interface Word {
   id: number;
@@ -16,13 +16,15 @@ export interface Word {
 }
 
 export interface WordWithRelatedFile extends Word {
-  relatedFile: TextFile;
-  surroundingSentences: sentence[];
+  relatedFile: file;
+  surroundingRows: row[];
+  reachTop: boolean;
+  reachBottom: boolean;
 }
 
-interface sentence {
-  paragraph: number;
-  sentence: number;
+interface row {
+  page: number;
+  row: number;
   text: string;
 }
 

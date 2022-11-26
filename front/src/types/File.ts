@@ -1,4 +1,4 @@
-export interface TextFile {
+export interface file {
   id: number;
   author: string;
   uploadedAt: string;

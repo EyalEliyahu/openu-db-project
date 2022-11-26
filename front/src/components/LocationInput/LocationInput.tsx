@@ -9,7 +9,7 @@ interface Props {
 }
 
 export const LocationInput: FC<Props> = ({ onSubmit, searchMode }) => {
-  const [values, setValues] = React.useState<(number)[]>([0, 0, 0]);
+  const [values, setValues] = React.useState<(number)[]>([1, 1, 0]);
   const texts = searchMode.replace('Location (', '').replace(')', '').split('-');
   return (
     <div style={{

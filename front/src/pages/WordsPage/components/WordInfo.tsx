@@ -1,20 +1,17 @@
 import { FC } from 'react';
-import { WordWithRelatedFile } from 'types/Word';
-import { styled } from '@mui/material';
+import {  WordWithRelatedFile } from 'types/Word';
+import {  styled } from '@mui/material';
 import Button from '@mui/material/Button';
+import { Link } from 'react-router-dom';
 
 interface Props {
-  selectedWord: string;
   dbWords: WordWithRelatedFile[];
-  getPrevSentence: (wordId: number) => void;
-  getNextSentence: (wordId: number) => void;
+  getPrevRow: (word: WordWithRelatedFile) => void;
+  getNextRow: (word: WordWithRelatedFile) => void;
 }
 
-export const WordInfo: FC<Props> = ({ selectedWord, dbWords, getPrevSentence, getNextSentence }) => {
-  const relevantWords = dbWords.filter((word) => word.text === selectedWord);
-  if (relevantWords.length === 0) {
-    return null;
-  }
+export const WordInfo: FC<Props> = ({ dbWords, getPrevRow, getNextRow }) => {
+  
   
   const StyledOccurrence = styled('div')({
     display: 'flex',
@@ -38,6 +35,8 @@ export const WordInfo: FC<Props> = ({ selectedWord, dbWords, getPrevSentence, ge
     flex: 1,
     display: 'flex',
     gap: 10,
+    height: 160,
+    justifyContent: 'space-between',
   });
   
   const StyledOccurrenceRightSideButtons = styled('div')({
@@ -45,12 +44,14 @@ export const WordInfo: FC<Props> = ({ selectedWord, dbWords, getPrevSentence, ge
     flexDirection: 'column',
     justifyContent: 'space-around',
   });
+  
   const StyledOccurrenceRightSideParagraphs = styled('div')({
     color: 'black',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
     gap: 16,
+    flex: 1,
   });
   
   return (
@@ -65,25 +66,31 @@ export const WordInfo: FC<Props> = ({ selectedWord, dbWords, getPrevSentence, ge
       flexDirection: 'column',
     }}>
 		<p style={{ color: 'white', fontSize: 20, fontWeight: 'bold', textAlign: 'left' }}>Occurrences:</p>
-      {relevantWords.map((word) => (
+      {dbWords.map((word) => (
         <StyledOccurrence>
           <StyledOccurrenceLeftSide>
 				  	<p style={{ fontWeight: 'bold' }}>{`Text: ${word.text}`}</p>
-				  	<p>{`Related File: ${word.relatedFile.fileName}`}</p>
+            <Link to={`/files/${word.relatedFile.id}`} style={{color:'white'}}>
+				  	<p>
+              {`Related File: ${word.relatedFile.fileName}`}
+            </p>
+            </Link>
 				  	<p>{`Location (Page-Row-Index): ${word.page}-${word.row}-${word.pageRowStartIndex}`}</p>
 				  	<p>{`Location (Paragraph-Sentence-Index): ${word.paragraph}-${word.sentence}-${word.paragraphSentenceStartIndex}`}</p>
           </StyledOccurrenceLeftSide>
           <StyledOccurrenceRightSide>
             <StyledOccurrenceRightSideParagraphs>
-              {word.surroundingSentences.map((sentence) => (
+              {word.surroundingRows.map((row, rowIndex) => (
                 <>
-                <span>{`${sentence.paragraph}.${sentence.sentence}.`} {buildHighlightText(sentence.text, word.text)}</span>
+                <span>{`${row.page}.${row.row}.`} {buildHighlightText(row.text, rowIndex, word)}</span>
               </>
               ))}
             </StyledOccurrenceRightSideParagraphs>
             <StyledOccurrenceRightSideButtons>
-            	<Button variant="contained" color="primary" size="small" style={{ width: 100 }} onClick={() => getPrevSentence(word.id)}>Prev</Button>
-            	<Button variant="contained" color="primary" size="small" style={{ width: 100 }} onClick={() => getNextSentence(word.id)}>Next</Button>
+            	<Button disabled={word.reachBottom} variant="contained" color="primary" size="small" style={{ width: 100 }}
+                      onClick={() => getPrevRow(word)}>Prev</Button>
+            	<Button disabled={word.reachTop} variant="contained" color="primary" size="small" style={{ width: 100 }}
+                      onClick={() => getNextRow(word)}>Next</Button>
             </StyledOccurrenceRightSideButtons>
           </StyledOccurrenceRightSide>
 				</StyledOccurrence>
@@ -92,21 +99,39 @@ export const WordInfo: FC<Props> = ({ selectedWord, dbWords, getPrevSentence, ge
   );
 }
 
-const buildHighlightText = (text: string, highlightText: string) => {
-  const highlightTextLower = highlightText.toLowerCase();
-  const textLower = text.toLowerCase();
-  const highlightTextIndex = textLower.indexOf(highlightTextLower);
-  if (highlightTextIndex === -1) {
-    return text;
-  }
-  const highlightTextLength = highlightText.length;
-  const beforeHighlightText = text.slice(0, highlightTextIndex);
-  const afterHighlightText = text.slice(highlightTextIndex + highlightTextLength);
-  return (
-    <>
+const buildHighlightText = (rowText: string, rowIndex: number, word: WordWithRelatedFile) => {
+  const normalizedWordSelectedRowIndex = word.surroundingRows.findIndex((row) => row.row === word.row && row.page === word.page);
+  if (rowIndex !== normalizedWordSelectedRowIndex) {
+    return rowText;
+  } else {
+    const { pageRowStartIndex } = word;
+    // Find the word char index by pageRowStartIndex
+    const splittedWords = rowText.split(' ');
+    const isFirstWord = pageRowStartIndex === 0;
+    const highlightWordCharIndex = splittedWords.slice(0, pageRowStartIndex).join(' ').length + (isFirstWord ? 0 : 1);
+    const highlightWordEndCharIndex = highlightWordCharIndex + word.text.length;
+    
+    const beforeHighlightText = rowText.slice(0, highlightWordCharIndex);
+    const highlightText = rowText.slice(highlightWordCharIndex, highlightWordEndCharIndex);
+    const afterHighlightText = rowText.slice(highlightWordEndCharIndex, rowText.length);
+    return (
+      <>
       {beforeHighlightText}
-      <span style={{ backgroundColor: 'yellow' }}>{highlightText}</span>
-      {afterHighlightText}
+        <span style={{ backgroundColor: 'yellow' }}>{highlightText}</span>
+        {afterHighlightText}
     </>
-  );
+    );
+  }
 }
+
+
+//   const highlightTextLower = highlightText.toLowerCase();
+//   const textLower = sentenceText.toLowerCase();
+//   // const highlightTextSubstrings = getAllSubstrings(highlightTextLower).filter(
+//   //   (substring) => substring.length > 1
+//   // )
+//   const highlightTextIndex = textLower.indexOf(' ' + highlightTextLower + ' ');
+//   if (highlightTextIndex === -1) {
+//     return sentenceText;
+//   }
+// }

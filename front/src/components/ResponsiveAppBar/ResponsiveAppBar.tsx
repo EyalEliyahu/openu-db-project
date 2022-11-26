@@ -18,8 +18,15 @@ const pages = [
 
 export const ResponsiveAppBar = () => {
   const ref = React.useRef<HTMLDivElement>();
-  const exportData = () => {
-    // TODO: Call API to return blob.
+  const exportData = async () => {
+    const res = await fetch('http://localhost:8000/export_xml')
+    const xmlText = await res.json();
+    const element = document.createElement('a');
+    const file = new Blob([xmlText], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = 'export.xml';
+    document.body.appendChild(element); // Required for this to work in FireFox
+    element.click();
   };
   
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,9 +37,20 @@ export const ResponsiveAppBar = () => {
       reader.onload = function (evt) {
         const xmlContent = evt?.target?.result as string;
         console.log(xmlContent);
-        // TODO: Call API to import data.
+        fetch('http://localhost:8000/import_xml', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: xmlContent,
+          }),
+        }).then(() => {
+          window.location.reload();
+        });
       }
     }
+    
   }
   return (
     <AppBar position="static">
@@ -53,7 +71,7 @@ export const ResponsiveAppBar = () => {
               textDecoration: 'none',
             }}
           >
-            Words Search
+            Concordance
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map(([name, route]) => (

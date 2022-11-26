@@ -13,7 +13,7 @@ export const AddFileCard: FC<Props> = ({ onClick }) => {
     <Box sx={{ minWidth: 275, alignSelf: 'stretch', height: 180 }} onClick={onClick}>
       <Card>
         <CardActionArea>
-          <CardContent sx={{ height: 180, alignItems: 'center', justifyContent: 'center', display: 'flex' }}>
+          <CardContent sx={{width: 250, height: 248, alignItems: 'center', justifyContent: 'center', display: 'flex' }}>
             <AddCircleIcon sx={{ fontSize: 100, color: '#2076d1' }}/>
           </CardContent>
         </CardActionArea>
@@ -22,4 +22,3 @@ export const AddFileCard: FC<Props> = ({ onClick }) => {
     </Box>
   );
 };
-

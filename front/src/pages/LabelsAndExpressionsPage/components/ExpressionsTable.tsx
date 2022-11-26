@@ -9,22 +9,14 @@ import { Chip, IconButton, InputAdornment, Paper, TextField } from '@mui/materia
 import { Expression } from 'types/Expression';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 
-const MOCK_EXPRESSIONS: Expression[] = [
-  {
-    id: 1,
-    text: 'Im a text',
-  },
-  {
-    id: 2,
-    text: 'Another Expression',
-  }
-]
+
 export default function ExpressionsTable() {
   const [expressions, setExpressions] = React.useState<Expression[]>([]);
   
+  const fetchExpressions = () => fetch('http://localhost:8000/expression').then(res => res.json()).then(data => setExpressions(data));
+  
   useEffect(() => {
-    // TODO: Fetch Labels
-    setExpressions(MOCK_EXPRESSIONS);
+    fetchExpressions();
   }, [])
   
   const Wrapper = ({ children }: any) => (
@@ -33,18 +25,34 @@ export default function ExpressionsTable() {
     </Paper>
   )
   
-  const onExpressionDelete = (expressionId: number) => {
-    const newExpressions = expressions.filter(expression => expression.id !== expressionId);
-    setExpressions(newExpressions);
-    // TODO: Call APIs
+  const onExpressionDelete = async (expressionId: number) => {
+    await fetch(`http://localhost:8000/expression/${expressionId}`, { method: 'DELETE' });
+    await fetchExpressions();
   }
   
-  const addExpression = (e: any) => {
+  const addExpression = async (e: any) => {
     const newExpression = e.target.parentElement?.parentElement.parentElement.firstChild.value as string;
+    const isEmpty = newExpression.trim() === '';
+    if (isEmpty) {
+      window.alert('Expression is empty');
+      return;
+    }
+    const alreadyExists = expressions?.find(expression => expression.text === newExpression);
+    if (alreadyExists) {
+      window.alert('Expression already exists');
+      return;
+    }
     // @ts-ignore
     e.target.parentElement.parentElement.parentElement.firstChild.value = ''
-    const updatedExpressions = [...expressions, { id: expressions.length + 1, text: newExpression }];
-    setExpressions(updatedExpressions);
+    // call api
+    await fetch('http://localhost:8000/expression', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text: newExpression }),
+    });
+    await fetchExpressions();
   }
   
   return (

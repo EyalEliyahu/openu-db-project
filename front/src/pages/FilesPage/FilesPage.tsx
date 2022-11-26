@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { useEffect } from 'react';
-import { TextFile } from 'types/TextFile';
-import { MOCK_FILE_CONTENT, MOCK_RELATED_FILE_1, MOCK_RELATED_FILE_2 } from 'mockData';
+import { file } from 'types/File';
 import { FileCard } from 'pages/FilesPage/components/FileCard/FileCard';
 import { AddFileCard } from 'pages/FilesPage/components/AddFileCard/FileCard';
 import { Dialog, DialogContent, DialogTitle, TextField } from '@mui/material';
@@ -9,47 +8,54 @@ import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import Button from '@mui/material/Button';
+import { useParams } from 'react-router-dom';
 
-
-const MOCK_FILES = [MOCK_RELATED_FILE_1, MOCK_RELATED_FILE_2];
 
 const EMPTY_FILE = {
   author: '',
   publishedAt: new Date(),
+  uploadedAt: new Date(),
   fileName: '',
-  uploadedFileName: '',
   fileContent: '',
 }
 
 export const FilesPage = () => {
   const [filterFileName, setFilterFileName] = React.useState('');
-  const [files, setFiles] = React.useState<TextFile[]>([]);
+  const [filterAuthorName, setFilterAuthorName] = React.useState('');
+  const [filterDate, setFilterDate] = React.useState('');
+  const [files, setFiles] = React.useState<file[]>([]);
   const [isNewFileDialogOpen, setIsNewFileDialogOpen] = React.useState(false);
   const [newFileDetails, setNewFileDetails] = React.useState(EMPTY_FILE);
   
-  const filesToDisplay = files.filter(file => file.fileName.toLowerCase().includes(filterFileName.toLowerCase()));
   
   
-  const [openedViewFileId, setOpenedViewFileId] = React.useState('');
+  const filesToDisplay = files
+    .filter(file => file.fileName.toLowerCase().includes(filterFileName.toLowerCase()))
+    .filter(file => file.author.toLowerCase().includes(filterAuthorName.toLowerCase()))
+    .filter(file => file.publishedAt.includes(filterDate) || file.uploadedAt.includes(filterDate));
+  
+  // @ts-ignore
+  const urlFileId = window.location.pathname.split('/')?.[2];
+  const [openedViewFileId, setOpenedViewFileId] = React.useState(urlFileId || '');
   const openedFile = files.find(file => file.id.toString() === openedViewFileId);
   const [openedViewFileContent, setOpenedViewFileContent] = React.useState<string[][]>([]);
   
+  const fetchFiles = () => fetch('http://localhost:8000/files').then(res => res.json()).then(setFiles);
   
   useEffect(() => {
-    // Fetch Files
-    setFiles(MOCK_FILES)
+    fetchFiles();
   }, []);
   
   useEffect(() => {
-    if (!openedViewFileId) {
+    if (openedViewFileId) {
       // Fetch File Content by id
-      setOpenedViewFileContent(MOCK_FILE_CONTENT)
+      fetch(`http://localhost:8000/file/${openedViewFileId}/content`).then(res => res.json()).then(setOpenedViewFileContent);
     }
   }, [openedViewFileId])
   
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event?.target?.files?.[0];
-    setNewFileDetails((currentNewFileDetails) => ({ ...currentNewFileDetails, uploadedFileName: selectedFile?.name || '' }))
+    setNewFileDetails((currentNewFileDetails) => ({ ...currentNewFileDetails, fileName: selectedFile?.name || '' }))
     if (selectedFile) {
       const reader = new FileReader();
       reader.readAsText(selectedFile, "UTF-8");
@@ -61,31 +67,58 @@ export const FilesPage = () => {
     }
   }
   
-  const onSubmitNewFile = () => {
-    // TODO: Send request to server
+  const onSubmitNewFile = async () => {
     setNewFileDetails(EMPTY_FILE);
     setIsNewFileDialogOpen(false);
+    
+    await fetch('http://localhost:8000/file', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(newFileDetails),
+    });
+    
+    fetchFiles();
   }
   
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
     <div>
       <div style={{
-        padding: 20,
+        padding: '20px 300px',
+        display: 'flex',
+        gap: 30,
       }}>
       <TextField
         value={filterFileName}
         onChange={(e) => setFilterFileName(e.target.value)}
-        sx={{ width: '80%' }}
+        sx={{ flex: 1 }}
         id="standard-basic"
         variant="standard"
         label='Filter by file name'
       />
+      <TextField
+        value={filterAuthorName}
+        onChange={(e) => setFilterAuthorName(e.target.value)}
+        sx={{ flex: 1 }}
+        id="standard-basic"
+        variant="standard"
+        label='Filter by author name'
+      />
+      <TextField
+        value={filterDate}
+        onChange={(e) => setFilterDate(e.target.value)}
+        sx={{ flex: 1 }}
+        id="standard-basic"
+        variant="standard"
+        label='Filter by date'
+      />
       </div>
       
-      <div style={{ marginTop: 10, padding: 30, display: 'flex', gap: 20 }}>
+      <div style={{ marginTop: 10, padding: 30, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
       {filesToDisplay.map((file) => (
-        <FileCard setOpenedViewFile={setOpenedViewFileId} file={file}/>
+        <FileCard setOpenedViewFile={setOpenedViewFileId} file={file} fetchFiles={fetchFiles}/>
       ))}
         <AddFileCard onClick={() => setIsNewFileDialogOpen(true)}/>
 		  </div>
@@ -99,6 +132,7 @@ export const FilesPage = () => {
             gap: 20
           }}>
           <TextField id="standard-basic" label="File name" variant="standard"
+                     value={newFileDetails.fileName}
                      onChange={(e) => setNewFileDetails({ ...newFileDetails, fileName: e.target.value })}/>
           
           <TextField id="standard-basic" label="Author" variant="standard"
@@ -108,7 +142,7 @@ export const FilesPage = () => {
             label="Publised At"
             inputFormat="DD/MM/YYYY"
             value={newFileDetails.publishedAt}
-            onChange={(e) => console.log(e)}
+            onChange={(e) => setNewFileDetails({ ...newFileDetails, publishedAt: e as Date })}
             renderInput={(params) => <TextField {...params} />}
           />
           
@@ -118,9 +152,9 @@ export const FilesPage = () => {
                 <input type="file" hidden onChange={handleInputChange} accept=".txt"/>
               </Button>
   
-            {newFileDetails.uploadedFileName &&
-              <p style={{ fontSize: 12, margin: 3 }}>File name: {newFileDetails.uploadedFileName}</p>
-            }
+            {/*{newFileDetails.fileName &&*/}
+            {/*  <p style={{ fontSize: 12, margin: 3 }}>File name: {newFileDetails.fileName}</p>*/}
+            {/*}*/}
           </div>
             <div>
               <TextField
@@ -153,13 +187,13 @@ export const FilesPage = () => {
             flexDirection: 'column',
           }}>
             <span>Author: {openedFile?.author}</span>
-            <span>Published At: {openedFile?.publishedAt}</span>
+            <span style={{ marginBottom: 10 }}>Published At: {openedFile?.publishedAt}</span>
             {openedViewFileContent.map((page, index) => (
               <>
-                <p style={{ fontWeight: 'bold' }}>Page {index + 1}</p>
+                <p style={{ fontWeight: 'bold', marginTop: 10, }}>Paragraph {index + 1}</p>
                 {page.map((line, lineIndex) => (
                   <>
-                    <span style={{ marginBottom: 4 }}>
+                    <span style={{ marginBottom: 8 }}>
                       <b>{lineIndex + 1}.</b> {line}
                     </span>
                   </>
